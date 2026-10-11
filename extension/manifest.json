@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Form Focus Tracker",
+  "version": "1.0.0",
+  "description": "Monitors focus events on Google Forms for academic integrity purposes. Respondents are notified before monitoring begins.",
+
+  "permissions": [
+    "storage",
+    "alarms",
+    "tabs"
+  ],
+
+  "host_permissions": [
+    "https://docs.google.com/forms/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["https://docs.google.com/forms/*"],
+      "js": ["config.js", "content.js"],
+      "run_at": "document_end"
+    }
+  ],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "action": {
+    "default_title": "Form Focus Tracker"
+  }
+}

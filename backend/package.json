@@ -1,0 +1,21 @@
+{
+  "name": "form-focus-tracker-backend",
+  "version": "1.0.0",
+  "description": "Backend API and instructor dashboard for the Form Focus Tracker Chrome extension.",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "express": "4.22.3",
+    "express-rate-limit": "7.3.1",
+    "helmet": "7.1.0",
+    "cors": "2.8.5",
+    "dotenv": "16.4.5"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

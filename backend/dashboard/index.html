@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Form Focus Tracker — Instructor Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap" />
+  <style>
+    /* ── Reset & tokens ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:    #1a73e8;
+      --blue-lt: #e8f0fe;
+      --red:     #d93025;
+      --red-lt:  #fce8e6;
+      --green:   #188038;
+      --green-lt:#e6f4ea;
+      --yellow:  #f29900;
+      --yellow-lt:#fef7e0;
+      --grey-1:  #202124;
+      --grey-2:  #3c4043;
+      --grey-3:  #5f6368;
+      --grey-4:  #bdc1c6;
+      --grey-5:  #e8eaed;
+      --grey-6:  #f8f9fa;
+      --radius:  8px;
+      --shadow:  0 1px 4px rgba(0,0,0,.12);
+    }
+
+    body {
+      font-family: "Google Sans", Roboto, sans-serif;
+      background: var(--grey-6);
+      color: var(--grey-1);
+      min-height: 100vh;
+    }
+
+    /* ── Login screen ───────────────────────────────────────────── */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.14);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .login-card h1 { font-size: 22px; margin-bottom: 8px; }
+    .login-card p  { font-size: 14px; color: var(--grey-3); margin-bottom: 28px; line-height: 1.6; }
+    .login-card input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--grey-4);
+      border-radius: var(--radius);
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-family: "Roboto Mono", monospace;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .login-card input:focus { border-color: var(--blue); }
+    .login-card button {
+      width: 100%;
+      padding: 10px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .login-card button:hover { background: #1557b0; }
+    #login-error {
+      color: var(--red);
+      font-size: 13px;
+      margin-top: 10px;
+      min-height: 18px;
+    }
+
+    /* ── App shell ──────────────────────────────────────────────── */
+    #app { display: none; }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid var(--grey-5);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-left svg { flex-shrink: 0; }
+    .header-title { font-size: 17px; font-weight: 600; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    #logout-btn {
+      font-size: 13px;
+      color: var(--grey-3);
+      background: none;
+      border: 1px solid var(--grey-4);
+      border-radius: var(--radius);
+      padding: 6px 14px;
+      cursor: pointer;
+    }
+    #logout-btn:hover { border-color: var(--grey-2); color: var(--grey-2); }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+    /* ── Tabs ───────────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid var(--grey-5);
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--grey-3);
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .tab-btn:hover { color: var(--grey-1); }
+    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Filter bar ─────────────────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 8px 12px;
+      border: 1px solid var(--grey-4);
+      border-radius: var(--radius);
+      font-size: 13px;
+      outline: none;
+      background: #fff;
+    }
+    .filter-bar input:focus, .filter-bar select:focus { border-color: var(--blue); }
+    .filter-bar input { min-width: 220px; }
+    .btn {
+      padding: 8px 18px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background .15s, opacity .15s;
+    }
+    .btn-primary   { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: #1557b0; }
+    .btn-ghost     { background: none; border: 1px solid var(--grey-4); color: var(--grey-2); }
+    .btn-ghost:hover { border-color: var(--grey-2); }
+
+    /* ── Stats bar ──────────────────────────────────────────────── */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px 20px;
+    }
+    .stat-card .label { font-size: 12px; color: var(--grey-3); text-transform: uppercase; letter-spacing: .5px; }
+    .stat-card .value { font-size: 28px; font-weight: 600; margin-top: 4px; }
+    .stat-card.flagged .value { color: var(--red); }
+
+    /* ── Table ──────────────────────────────────────────────────── */
+    .table-wrap {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--grey-3);
+      background: var(--grey-6);
+      border-bottom: 1px solid var(--grey-5);
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--grey-5); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--grey-6); }
+    tbody td { padding: 12px 16px; vertical-align: middle; }
+    .mono { font-family: "Roboto Mono", monospace; font-size: 12px; }
+
+    /* ── Badges ─────────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .badge-red    { background: var(--red-lt);    color: var(--red);   }
+    .badge-green  { background: var(--green-lt);  color: var(--green); }
+    .badge-yellow { background: var(--yellow-lt); color: var(--yellow);}
+    .badge-blue   { background: var(--blue-lt);   color: var(--blue);  }
+
+    /* ── Pagination ─────────────────────────────────────────────── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 14px 16px;
+      border-top: 1px solid var(--grey-5);
+      font-size: 13px;
+      color: var(--grey-3);
+    }
+    .pagination button {
+      padding: 4px 12px;
+      border: 1px solid var(--grey-4);
+      background: #fff;
+      border-radius: var(--radius);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .pagination button:disabled { opacity: .4; cursor: default; }
+    .pagination button:not(:disabled):hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── Detail modal ───────────────────────────────────────────── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 680px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 40px rgba(0,0,0,.2);
+    }
+    .modal-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--grey-5);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 1;
+    }
+    .modal-header h2 { font-size: 16px; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--grey-3);
+      line-height: 1;
+      padding: 4px;
+    }
+    .modal-body { padding: 20px 24px; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .detail-item .label { font-size: 11px; color: var(--grey-3); text-transform: uppercase; letter-spacing: .4px; }
+    .detail-item .val   { font-size: 15px; font-weight: 500; margin-top: 2px; }
+
+    .events-list { margin-top: 8px; }
+    .events-list h3 { font-size: 13px; font-weight: 600; color: var(--grey-2); margin-bottom: 10px; }
+    .event-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--grey-5);
+      font-size: 12px;
+    }
+    .event-row:last-child { border-bottom: none; }
+    .event-row .ev-type { min-width: 130px; font-weight: 500; }
+    .event-row .ev-time { color: var(--grey-3); font-family: "Roboto Mono", monospace; }
+    .event-row .ev-dur  { color: var(--blue); font-family: "Roboto Mono", monospace; }
+
+    /* ── Loading / empty states ──────────────────────────────────── */
+    .state-box {
+      text-align: center;
+      padding: 56px 24px;
+      color: var(--grey-3);
+      font-size: 14px;
+    }
+    .state-box .icon { font-size: 36px; margin-bottom: 12px; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--grey-5);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive tweaks ──────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .detail-grid { grid-template-columns: 1fr; }
+      .stats-bar   { grid-template-columns: 1fr 1fr; }
+      thead th:nth-child(n+5) { display: none; }
+      tbody td:nth-child(n+5) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Login ─────────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="margin:0 auto 16px" aria-hidden="true">
+      <rect width="40" height="40" rx="8" fill="#1a73e8"/>
+      <path d="M12 20a8 8 0 1 1 16 0 8 8 0 0 1-16 0zm8-5v5l3.5 3.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <h1>Form Focus Tracker</h1>
+    <p>Instructor dashboard — enter your API key to continue.</p>
+    <input type="password" id="key-input" placeholder="Instructor API key" autocomplete="current-password" />
+    <button id="login-btn">Sign in</button>
+    <div id="login-error" role="alert" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- ── App ───────────────────────────────────────────────────────────────── -->
+<div id="app">
+  <header>
+    <div class="header-left">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect width="24" height="24" rx="5" fill="#1a73e8"/>
+        <path d="M7 12a5 5 0 1 1 10 0 5 5 0 0 1-10 0zm5-3v3l2 2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="header-title">Form Focus Tracker</span>
+    </div>
+    <div class="header-right">
+      <span id="header-form-label" style="font-size:13px;color:var(--grey-3)"></span>
+      <button id="logout-btn">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" role="tab" aria-selected="true"  data-tab="sessions">Sessions</button>
+      <button class="tab-btn"        role="tab" aria-selected="false" data-tab="students">Students</button>
+      <button class="tab-btn"        role="tab" aria-selected="false" data-tab="forms">Forms</button>
+    </div>
+
+    <!-- Sessions tab -->
+    <div id="tab-sessions" class="tab-panel active" role="tabpanel">
+      <div class="filter-bar">
+        <input type="text" id="filter-form"        placeholder="Filter by Form ID…" aria-label="Filter by Form ID" />
+        <select id="filter-flagged" aria-label="Filter by flag status">
+          <option value="">All sessions</option>
+          <option value="1">Flagged only</option>
+          <option value="0">Clean only</option>
+        </select>
+        <button class="btn btn-primary" id="apply-filter-btn">Apply</button>
+        <button class="btn btn-ghost"   id="clear-filter-btn">Clear</button>
+        <button class="btn btn-ghost"   id="refresh-btn" style="margin-left:auto">↻ Refresh</button>
+      </div>
+
+      <div class="stats-bar" id="stats-bar">
+        <div class="stat-card"><div class="label">Total sessions</div><div class="value" id="stat-total">—</div></div>
+        <div class="stat-card flagged"><div class="label">Flagged</div><div class="value" id="stat-flagged">—</div></div>
+        <div class="stat-card"><div class="label">Avg switches</div><div class="value" id="stat-avg-switches">—</div></div>
+        <div class="stat-card"><div class="label">Avg time away</div><div class="value" id="stat-avg-away">—</div></div>
+      </div>
+
+      <div class="table-wrap">
+        <table aria-label="Sessions table">
+          <thead>
+            <tr>
+              <th>Respondent</th>
+              <th>Form</th>
+              <th>Switches</th>
+              <th>Time away</th>
+              <th>Pastes</th>
+              <th>Last seen</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="sessions-tbody">
+            <tr><td colspan="8"><div class="state-box"><div class="spinner"></div>Loading…</div></td></tr>
+          </tbody>
+        </table>
+        <div class="pagination" id="sessions-pagination"></div>
+      </div>
+    </div>
+
+    <!-- Students tab -->
+    <div id="tab-students" class="tab-panel" role="tabpanel">
+      <div class="filter-bar">
+        <input type="text" id="student-filter-form" placeholder="Filter by Form ID…" aria-label="Filter students by Form ID" />
+        <button class="btn btn-primary" id="student-apply-btn">Apply</button>
+        <button class="btn btn-ghost"   id="student-clear-btn">Clear</button>
+        <button class="btn btn-ghost"   id="refresh-students-btn" style="margin-left:auto">↻ Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table aria-label="Students table">
+          <thead>
+            <tr>
+              <th>Respondent</th>
+              <th>Sessions</th>
+              <th>Flagged sessions</th>
+              <th>Total switches</th>
+              <th>Total time away</th>
+              <th>Total pastes</th>
+              <th>Last seen</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="students-tbody">
+            <tr><td colspan="9"><div class="state-box"><div class="spinner"></div>Loading…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Forms tab -->
+    <div id="tab-forms" class="tab-panel" role="tabpanel">
+      <div class="filter-bar">
+        <button class="btn btn-ghost" id="refresh-forms-btn" style="margin-left:auto">↻ Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table aria-label="Forms table">
+          <thead>
+            <tr>
+              <th>Form ID</th>
+              <th>Sessions</th>
+              <th>Flagged</th>
+              <th>Avg switches</th>
+              <th>Avg time away</th>
+              <th>Latest activity</th>
+            </tr>
+          </thead>
+          <tbody id="forms-tbody">
+            <tr><td colspan="6"><div class="state-box"><div class="spinner"></div>Loading…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Session detail modal ───────────────────────────────────────────────── -->
+<div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Session detail</h2>
+      <button class="modal-close" id="modal-close-btn" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body">
+      <div class="state-box"><div class="spinner"></div>Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+const API_BASE = "";   // same origin; adjust if backend is on a different host
+let instructorKey = "";
+
+const state = {
+  sessions: { page: 1, pageSize: 50, total: 0, formId: "", flagged: "" },
+};
+
+// ── Utility ──────────────────────────────────────────────────────────────────
+
+function fmtDuration(ms) {
+  if (ms == null || ms === 0) return "—";
+  if (ms < 1000)  return `${ms}ms`;
+  if (ms < 60000) return `${(ms/1000).toFixed(1)}s`;
+  const m = Math.floor(ms / 60000);
+  const s = Math.round((ms % 60000) / 1000);
+  return `${m}m ${s}s`;
+}
+
+function fmtDate(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString();
+}
+
+function truncate(str, n = 28) {
+  if (!str) return "—";
+  return str.length > n ? str.slice(0, n) + "…" : str;
+}
+
+async function apiFetch(path, expectJson = true) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "X-Instructor-Key": instructorKey }
+  });
+  if (res.status === 401) throw new Error("unauthorised");
+  if (!res.ok)            throw new Error(`HTTP ${res.status}`);
+  return expectJson ? res.json() : res;
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+document.getElementById("login-btn").addEventListener("click", attemptLogin);
+document.getElementById("key-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") attemptLogin();
+});
+
+async function attemptLogin() {
+  const key = document.getElementById("key-input").value.trim();
+  if (!key) {
+    showLoginError("Please enter your instructor key.");
+    return;
+  }
+  instructorKey = key;
+  try {
+    // Probe the API; a 401 means bad key, anything else means server is up.
+    await apiFetch("/api/dashboard/forms");
+    showApp();
+  } catch (err) {
+    if (err.message === "unauthorised") {
+      showLoginError("Invalid key — please try again.");
+    } else {
+      showLoginError(`Cannot reach server: ${err.message}`);
+    }
+    instructorKey = "";
+  }
+}
+
+function showLoginError(msg) {
+  document.getElementById("login-error").textContent = msg;
+}
+
+function showApp() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  loadSessions();
+  loadStudents();
+  loadForms();
+}
+
+document.getElementById("logout-btn").addEventListener("click", () => {
+  instructorKey = "";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("login-screen").style.display = "flex";
+  document.getElementById("key-input").value = "";
+  document.getElementById("login-error").textContent = "";
+});
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => {
+      b.classList.remove("active");
+      b.setAttribute("aria-selected", "false");
+    });
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    btn.setAttribute("aria-selected", "true");
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+  });
+});
+
+// ── Sessions tab ─────────────────────────────────────────────────────────────
+
+document.getElementById("apply-filter-btn").addEventListener("click", () => {
+  state.sessions.formId  = document.getElementById("filter-form").value.trim();
+  state.sessions.flagged = document.getElementById("filter-flagged").value;
+  state.sessions.page    = 1;
+  loadSessions();
+});
+
+document.getElementById("clear-filter-btn").addEventListener("click", () => {
+  document.getElementById("filter-form").value    = "";
+  document.getElementById("filter-flagged").value = "";
+  state.sessions.formId  = "";
+  state.sessions.flagged = "";
+  state.sessions.page    = 1;
+  loadSessions();
+});
+
+document.getElementById("refresh-btn").addEventListener("click", loadSessions);
+document.getElementById("refresh-forms-btn").addEventListener("click", loadForms);
+document.getElementById("refresh-students-btn").addEventListener("click", loadStudents);
+
+async function loadSessions() {
+  const { page, pageSize, formId, flagged } = state.sessions;
+
+  const params = new URLSearchParams({ page, pageSize });
+  if (formId)  params.set("form_id", formId);
+
+  setSessionsBody(`<tr><td colspan="8"><div class="state-box"><div class="spinner"></div>Loading…</div></td></tr>`);
+
+  try {
+    const data = await apiFetch(`/api/dashboard/sessions?${params}`);
+
+    // Client-side flagged filter (API doesn't expose it as a param, so we filter here).
+    let rows = data.sessions;
+    if (flagged === "1") rows = rows.filter(s => s.flagged);
+    if (flagged === "0") rows = rows.filter(s => !s.flagged);
+
+    updateStats(data);
+    renderSessionsTable(rows);
+    renderPagination(data.total, page, pageSize);
+  } catch (err) {
+    setSessionsBody(`<tr><td colspan="8"><div class="state-box">
+      <div class="icon">⚠️</div>Failed to load: ${err.message}
+    </div></td></tr>`);
+  }
+}
+
+function updateStats(data) {
+  const sessions = data.sessions;
+  document.getElementById("stat-total").textContent   = data.total;
+  document.getElementById("stat-flagged").textContent = sessions.filter(s => s.flagged).length;
+
+  if (sessions.length > 0) {
+    const avgSw = (sessions.reduce((a, s) => a + s.focus_lost_count, 0) / sessions.length).toFixed(1);
+    const avgAw = sessions.reduce((a, s) => a + s.total_away_ms, 0) / sessions.length;
+    document.getElementById("stat-avg-switches").textContent = avgSw;
+    document.getElementById("stat-avg-away").textContent     = fmtDuration(avgAw);
+  } else {
+    document.getElementById("stat-avg-switches").textContent = "—";
+    document.getElementById("stat-avg-away").textContent     = "—";
+  }
+}
+
+function renderSessionsTable(sessions) {
+  if (sessions.length === 0) {
+    setSessionsBody(`<tr><td colspan="8"><div class="state-box">
+      <div class="icon">📭</div>No sessions found.
+    </div></td></tr>`);
+    return;
+  }
+
+  const rows = sessions.map(s => {
+    const flagBadge = s.flagged
+      ? `<span class="badge badge-red">⚑ Flagged</span>`
+      : `<span class="badge badge-green">✓ Clean</span>`;
+
+    return `<tr>
+      <td title="${s.respondent_id}">${truncate(s.respondent_id, 24)}</td>
+      <td title="${s.form_id}">${truncate(s.form_title || s.form_id, 22)}</td>
+      <td>${s.focus_lost_count}</td>
+      <td>${fmtDuration(s.total_away_ms)}</td>
+      <td>${s.paste_count}</td>
+      <td style="white-space:nowrap">${fmtDate(s.last_seen)}</td>
+      <td>${flagBadge}</td>
+      <td><button class="btn btn-ghost detail-btn" data-id="${s.session_id}" style="padding:4px 10px;font-size:12px">Detail</button></td>
+    </tr>`;
+  }).join("");
+
+  setSessionsBody(rows);
+
+  // Attach detail button listeners after DOM update.
+  document.querySelectorAll(".detail-btn").forEach(btn => {
+    btn.addEventListener("click", () => openSessionModal(btn.dataset.id));
+  });
+}
+
+function renderPagination(total, page, pageSize) {
+  const totalPages = Math.ceil(total / pageSize);
+  const pag = document.getElementById("sessions-pagination");
+  if (totalPages <= 1) { pag.innerHTML = ""; return; }
+
+  pag.innerHTML = `
+    <span>${(page-1)*pageSize + 1}–${Math.min(page*pageSize, total)} of ${total}</span>
+    <button id="prev-pg" ${page <= 1 ? "disabled" : ""}>← Prev</button>
+    <button id="next-pg" ${page >= totalPages ? "disabled" : ""}>Next →</button>
+  `;
+  document.getElementById("prev-pg")?.addEventListener("click", () => {
+    state.sessions.page--;
+    loadSessions();
+  });
+  document.getElementById("next-pg")?.addEventListener("click", () => {
+    state.sessions.page++;
+    loadSessions();
+  });
+}
+
+function setSessionsBody(html) {
+  document.getElementById("sessions-tbody").innerHTML = html;
+}
+
+// ── Students tab ──────────────────────────────────────────────────────────────
+
+let studentFormFilter = "";
+
+document.getElementById("student-apply-btn").addEventListener("click", () => {
+  studentFormFilter = document.getElementById("student-filter-form").value.trim();
+  loadStudents();
+});
+document.getElementById("student-clear-btn").addEventListener("click", () => {
+  document.getElementById("student-filter-form").value = "";
+  studentFormFilter = "";
+  loadStudents();
+});
+
+async function loadStudents() {
+  setStudentsBody(`<tr><td colspan="9"><div class="state-box"><div class="spinner"></div>Loading…</div></td></tr>`);
+  const params = new URLSearchParams();
+  if (studentFormFilter) params.set("form_id", studentFormFilter);
+  try {
+    const data = await apiFetch(`/api/dashboard/students?${params}`);
+    renderStudentsTable(data.students);
+  } catch (err) {
+    setStudentsBody(`<tr><td colspan="9"><div class="state-box"><div class="icon">⚠️</div>Failed to load: ${err.message}</div></td></tr>`);
+  }
+}
+
+function renderStudentsTable(students) {
+  if (students.length === 0) {
+    setStudentsBody(`<tr><td colspan="9"><div class="state-box"><div class="icon">📭</div>No students found.</div></td></tr>`);
+    return;
+  }
+  const rows = students.map(s => {
+    const statusBadge = s.flagged_count > 0
+      ? `<span class="badge badge-red">⚑ ${s.flagged_count} flagged</span>`
+      : `<span class="badge badge-green">✓ Clean</span>`;
+    return `<tr>
+      <td class="mono" title="${s.respondent_id}">${truncate(s.respondent_id, 28)}</td>
+      <td>${s.session_count}</td>
+      <td>${s.flagged_count > 0
+        ? `<span style="color:var(--red);font-weight:600">${s.flagged_count}</span>`
+        : `<span style="color:var(--green)">0</span>`}</td>
+      <td>${s.total_switches}</td>
+      <td>${fmtDuration(s.total_away_ms)}</td>
+      <td>${s.total_pastes}</td>
+      <td style="white-space:nowrap">${fmtDate(s.latest_activity)}</td>
+      <td>${statusBadge}</td>
+      <td><button class="btn btn-ghost student-detail-btn" data-id="${encodeURIComponent(s.respondent_id)}" style="padding:4px 10px;font-size:12px">Sessions</button></td>
+    </tr>`;
+  }).join("");
+  setStudentsBody(rows);
+
+  // Click "Sessions" → jump to Sessions tab filtered to this student's respondent_id
+  document.querySelectorAll(".student-detail-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const rid = decodeURIComponent(btn.dataset.id);
+      // Switch to sessions tab and filter by this respondent
+      document.querySelectorAll(".tab-btn").forEach(b => {
+        b.classList.remove("active");
+        b.setAttribute("aria-selected", "false");
+      });
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      const sessTab = document.querySelector('[data-tab="sessions"]');
+      sessTab.classList.add("active");
+      sessTab.setAttribute("aria-selected", "true");
+      document.getElementById("tab-sessions").classList.add("active");
+      // Pre-fill filter and load
+      document.getElementById("filter-form").value = "";
+      state.sessions.formId  = "";
+      state.sessions.flagged = "";
+      state.sessions.page    = 1;
+      // Store respondent filter and reload
+      state.sessions.respondentId = rid;
+      loadSessionsForRespondent(rid);
+    });
+  });
+}
+
+function setStudentsBody(html) {
+  document.getElementById("students-tbody").innerHTML = html;
+}
+
+async function loadSessionsForRespondent(respondentId) {
+  setSessionsBody(`<tr><td colspan="8"><div class="state-box"><div class="spinner"></div>Loading…</div></td></tr>`);
+  try {
+    // Fetch all sessions and filter client-side by respondent_id
+    const data = await apiFetch(`/api/dashboard/sessions?page=1&pageSize=200`);
+    const filtered = data.sessions.filter(s => s.respondent_id === respondentId);
+    updateStats({ sessions: filtered, total: filtered.length });
+    renderSessionsTable(filtered);
+    document.getElementById("sessions-pagination").innerHTML =
+      `<span style="color:var(--grey-3);font-size:12px">Showing all sessions for: <strong>${truncate(respondentId, 40)}</strong></span>`;
+  } catch (err) {
+    setSessionsBody(`<tr><td colspan="8"><div class="state-box"><div class="icon">⚠️</div>${err.message}</div></td></tr>`);
+  }
+}
+
+// ── Forms tab ─────────────────────────────────────────────────────────────────
+
+async function loadForms() {
+  setFormsBody(`<tr><td colspan="6"><div class="state-box"><div class="spinner"></div>Loading…</div></td></tr>`);
+  try {
+    const data = await apiFetch("/api/dashboard/forms");
+    renderFormsTable(data.forms);
+  } catch (err) {
+    setFormsBody(`<tr><td colspan="6"><div class="state-box">
+      <div class="icon">⚠️</div>Failed to load: ${err.message}
+    </div></td></tr>`);
+  }
+}
+
+function renderFormsTable(forms) {
+  if (forms.length === 0) {
+    setFormsBody(`<tr><td colspan="6"><div class="state-box">
+      <div class="icon">📭</div>No forms recorded yet.
+    </div></td></tr>`);
+    return;
+  }
+
+  const rows = forms.map(f => {
+    const flagRate = f.session_count > 0
+      ? Math.round((f.flagged_count / f.session_count) * 100) + "%"
+      : "—";
+    const flagBadge = f.flagged_count > 0
+      ? `<span class="badge badge-red">${f.flagged_count} flagged (${flagRate})</span>`
+      : `<span class="badge badge-green">0 flagged</span>`;
+
+    return `<tr>
+      <td title="${f.form_id}">${truncate(f.form_title || f.form_id, 36)}</td>
+      <td>${f.session_count}</td>
+      <td>${flagBadge}</td>
+      <td>${f.avg_focus_lost}</td>
+      <td>${fmtDuration(f.avg_away_ms)}</td>
+      <td style="white-space:nowrap">${fmtDate(f.latest_activity)}</td>
+    </tr>`;
+  }).join("");
+
+  setFormsBody(rows);
+}
+
+function setFormsBody(html) {
+  document.getElementById("forms-tbody").innerHTML = html;
+}
+
+// ── Session detail modal ──────────────────────────────────────────────────────
+
+async function openSessionModal(sessionId) {
+  const overlay = document.getElementById("modal-overlay");
+  document.getElementById("modal-body").innerHTML =
+    `<div class="state-box"><div class="spinner"></div>Loading…</div>`;
+  overlay.classList.add("open");
+
+  try {
+    const s = await apiFetch(`/api/dashboard/sessions/${sessionId}`);
+    renderModalBody(s);
+  } catch (err) {
+    document.getElementById("modal-body").innerHTML =
+      `<div class="state-box"><div class="icon">⚠️</div>Failed to load: ${err.message}</div>`;
+  }
+}
+
+function renderModalBody(s) {
+  const flagBadge = s.flagged
+    ? `<span class="badge badge-red">⚑ Flagged</span>`
+    : `<span class="badge badge-green">✓ Clean</span>`;
+
+  const eventTypeStyle = {
+    focus_lost:    "badge badge-yellow",
+    focus_regained:"badge badge-blue",
+    paste:         "badge badge-red",
+    session_start: "badge badge-green"
+  };
+
+  const eventRows = (s.events ?? []).map(ev => {
+    const cls = eventTypeStyle[ev.event_type] ?? "badge";
+    const dur = ev.duration_ms != null ? `<span class="ev-dur">+${fmtDuration(ev.duration_ms)}</span>` : "";
+    const meta = ev.meta?.field_label
+      ? `<span style="color:var(--grey-3)"> — field: "${ev.meta.field_label}"</span>`
+      : "";
+    return `<div class="event-row">
+      <span class="ev-type"><span class="${cls}">${ev.event_type}</span>${meta}</span>
+      <span class="ev-time">${fmtDate(ev.client_time)}</span>
+      ${dur}
+    </div>`;
+  }).join("");
+
+  document.getElementById("modal-body").innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-item"><div class="label">Session ID</div>      <div class="val mono">${truncate(s.session_id, 32)}</div></div>
+      <div class="detail-item"><div class="label">Status</div>          <div class="val">${flagBadge}</div></div>
+      <div class="detail-item"><div class="label">Respondent</div>      <div class="val mono">${s.respondent_id}</div></div>
+      <div class="detail-item"><div class="label">Form</div>            <div class="val">${s.form_title || s.form_id}</div></div>
+      <div class="detail-item"><div class="label">Focus switches</div>  <div class="val">${s.focus_lost_count}</div></div>
+      <div class="detail-item"><div class="label">Total away</div>      <div class="val">${fmtDuration(s.total_away_ms)}</div></div>
+      <div class="detail-item"><div class="label">Paste events</div>    <div class="val">${s.paste_count}</div></div>
+      <div class="detail-item"><div class="label">Last seen</div>       <div class="val">${fmtDate(s.last_seen)}</div></div>
+    </div>
+    <div class="events-list">
+      <h3>Event log (${(s.events ?? []).length} events)</h3>
+      ${eventRows || `<div style="color:var(--grey-3);font-size:13px">No events recorded.</div>`}
+    </div>
+  `;
+}
+
+document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+document.getElementById("modal-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("modal-overlay")) closeModal();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+function closeModal() {
+  document.getElementById("modal-overlay").classList.remove("open");
+}
+</script>
+</body>
+</html>
